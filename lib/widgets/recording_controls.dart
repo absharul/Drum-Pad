@@ -7,11 +7,13 @@ import '../services/recording_service.dart';
 class RecordingControls extends StatefulWidget {
   final RecordingService recordingService;
   final VoidCallback? onRecordingStateChanged;
+  final void Function(String? path, Duration duration)? onRecordingSaved;
 
   const RecordingControls({
     super.key,
     required this.recordingService,
     this.onRecordingStateChanged,
+    this.onRecordingSaved,
   });
 
   @override
@@ -63,12 +65,15 @@ class _RecordingControlsState extends State<RecordingControls>
 
   Future<void> _toggleRecording() async {
     if (widget.recordingService.isRecording) {
-      await widget.recordingService.stopRecording();
+      final path = await widget.recordingService.stopRecording();
+      final duration = _currentDuration;
       _pulseController.stop();
       _pulseController.reset();
       setState(() {
         _hasRecording = true;
       });
+      // Save the recording
+      widget.onRecordingSaved?.call(path, duration);
     } else {
       final success = await widget.recordingService.startRecording();
       if (success) {

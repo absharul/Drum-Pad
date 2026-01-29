@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 
 /// A single drum pad with beautiful gradient and tap animations
@@ -50,6 +51,7 @@ class _DrumPadState extends State<DrumPad> with SingleTickerProviderStateMixin {
 
   void _onTapDown(TapDownDetails details) {
     _controller.forward();
+    HapticFeedback.mediumImpact();
     widget.onTap();
   }
 
@@ -141,15 +143,18 @@ class _DrumPadState extends State<DrumPad> with SingleTickerProviderStateMixin {
 
   IconData _getPadIcon(int index) {
     const icons = [
-      Icons.music_note,
-      // Icons.album,
-      // Icons.audiotrack,
-      // Icons.surround_sound,
-      // Icons.graphic_eq,
-      // Icons.equalizer,
-      // Icons.vibration,
-      // Icons.waves,
-      // Icons.spatial_audio,
+      Icons.music_note, // Kick
+      Icons.album, // Snare
+      Icons.audiotrack, // Hi-Hat
+      Icons.surround_sound, // Clap
+      Icons.graphic_eq, // Tom
+      Icons.equalizer, // Cymbal
+      Icons.vibration, // Percussion
+      Icons.waves, // Bass
+      Icons.spatial_audio, // FX
+      Icons.piano, // Synth
+      Icons.queue_music, // Loop
+      Icons.multitrack_audio, // Mix
     ];
     return icons[index % icons.length];
   }

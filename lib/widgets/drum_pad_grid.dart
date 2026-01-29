@@ -1,9 +1,25 @@
 import 'package:flutter/material.dart';
 import 'drum_pad.dart';
 
-/// A 3x3 grid of drum pads
+/// A 4x3 grid of drum pads with labels
 class DrumPadGrid extends StatelessWidget {
   final Function(int) onPadTap;
+
+  // Pad labels for different drum sounds
+  static const List<String> padLabels = [
+    'KICK',
+    'SNARE',
+    'HI-HAT',
+    'CLAP',
+    'TOM',
+    'CYMBAL',
+    'PERC',
+    'BASS',
+    'FX',
+    'SYNTH',
+    'LOOP',
+    'MIX',
+  ];
 
   const DrumPadGrid({super.key, required this.onPadTap});
 
@@ -14,28 +30,30 @@ class DrumPadGrid extends StatelessWidget {
         // Calculate grid size based on available space
         final availableWidth = constraints.maxWidth;
         final availableHeight = constraints.maxHeight;
-        final gridSize = availableWidth < availableHeight
-            ? availableWidth
-            : availableHeight;
+
+        // Calculate optimal size for 4x3 grid
+        final cellWidth = availableWidth / 3;
+        final cellHeight = availableHeight / 4;
+        final aspectRatio = cellWidth / cellHeight;
 
         return Center(
-          child: SizedBox(
-            width: gridSize,
-            height: gridSize,
-            child: GridView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(8),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 15,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.5,
-              ),
-              itemCount: 12,
-              itemBuilder: (context, index) {
-                return DrumPad(index: index, onTap: () => onPadTap(index));
-              },
+          child: GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(8),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: aspectRatio.clamp(0.8, 1.5),
             ),
+            itemCount: 12,
+            itemBuilder: (context, index) {
+              return DrumPad(
+                index: index,
+                onTap: () => onPadTap(index),
+                label: padLabels[index],
+              );
+            },
           ),
         );
       },

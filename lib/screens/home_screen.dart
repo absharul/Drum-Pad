@@ -2,10 +2,17 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../services/audio_service.dart';
 import '../services/recording_service.dart';
+import '../services/recordings_storage.dart';
+import '../models/sound_pack.dart';
+import '../models/recording.dart';
 import '../widgets/drum_pad_grid.dart';
 import '../widgets/recording_controls.dart';
+import '../widgets/sound_pack_selector.dart';
+import '../widgets/waveform_visualizer.dart';
+import '../widgets/bpm_control.dart';
+import 'recordings_screen.dart';
 
-/// Main home screen with drum pad grid and recording controls
+/// Main home screen with drum pad grid, recording controls, and enhanced features
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -13,15 +20,23 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final AudioService _audioService = AudioService();
   final RecordingService _recordingService = RecordingService();
+  final RecordingsStorage _recordingsStorage = RecordingsStorage();
   bool _isInitialized = false;
+  bool _showBpmControl = false;
+  bool _isPlayingSound = false;
+  late AnimationController _waveformController;
 
   @override
   void initState() {
     super.initState();
     _initializeServices();
+    _waveformController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
   }
 
   Future<void> _initializeServices() async {
@@ -35,11 +50,43 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _audioService.dispose();
     _recordingService.dispose();
+    _waveformController.dispose();
     super.dispose();
   }
 
   void _onPadTap(int index) {
     _audioService.playSound(index);
+    // Trigger waveform animation
+    setState(() {
+      _isPlayingSound = true;
+    });
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _isPlayingSound = false;
+        });
+      }
+    });
+  }
+
+  void _onSoundPackChanged(SoundPack pack) {
+    _audioService.switchSoundPack(pack);
+    setState(() {});
+  }
+
+  Future<void> _saveRecording(String? path, Duration duration) async {
+    if (path == null) return;
+
+    final recording = Recording(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      path: path,
+      name:
+          'Beat ${DateTime.now().day}/${DateTime.now().month} ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
+      duration: duration,
+      createdAt: DateTime.now(),
+    );
+
+    await _recordingsStorage.saveRecording(recording);
   }
 
   @override
@@ -56,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: const Text(
             '🥁 DRUM PAD',
             style: TextStyle(
-              fontSize: 28,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
               letterSpacing: 3,
               color: Colors.white,
@@ -64,6 +111,38 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         actions: [
+          // BPM toggle button
+          IconButton(
+            icon: Icon(
+              Icons.speed,
+              color: _showBpmControl
+                  ? AppColors.accent
+                  : AppColors.textSecondary,
+            ),
+            onPressed: () {
+              setState(() {
+                _showBpmControl = !_showBpmControl;
+              });
+            },
+            tooltip: 'Metronome',
+          ),
+          // Recordings button
+          IconButton(
+            icon: const Icon(
+              Icons.library_music,
+              color: AppColors.textSecondary,
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const RecordingsScreen(),
+                ),
+              );
+            },
+            tooltip: 'My Beats',
+          ),
+          // Info button
           IconButton(
             icon: const Icon(
               Icons.info_outline,
@@ -79,6 +158,12 @@ class _HomeScreenState extends State<HomeScreen> {
           bottom: false,
           child: Column(
             children: [
+              // Sound Pack Selector
+              SoundPackSelector(
+                selectedPack: _audioService.currentPack,
+                onPackSelected: _onSoundPackChanged,
+              ),
+
               // Status indicator
               if (_recordingService.isRecording)
                 Container(
@@ -116,11 +201,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
+
+              // BPM Control (expandable)
+              AnimatedSize(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                child: _showBpmControl
+                    ? const BpmControl()
+                    : const SizedBox.shrink(),
+              ),
+
               // Drum pad grid
               Expanded(
                 child: _isInitialized
                     ? Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(12),
                         child: DrumPadGrid(onPadTap: _onPadTap),
                       )
                     : const Center(
@@ -129,12 +224,22 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
               ),
+
+              // Waveform Visualizer
+              WaveformVisualizer(
+                isActive: _isPlayingSound || _recordingService.isRecording,
+                activeColor: _recordingService.isRecording
+                    ? AppColors.recordingRed
+                    : AppColors.accent,
+              ),
+
               // Recording controls
               RecordingControls(
                 recordingService: _recordingService,
                 onRecordingStateChanged: () {
                   setState(() {});
                 },
+                onRecordingSaved: _saveRecording,
               ),
             ],
           ),
@@ -169,12 +274,14 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             SizedBox(height: 12),
             InfoItem(icon: Icons.touch_app, text: 'Tap pads to play sounds'),
+            InfoItem(icon: Icons.music_note, text: 'Switch sound packs at top'),
+            InfoItem(icon: Icons.speed, text: 'Use metronome for timing'),
             InfoItem(
               icon: Icons.fiber_manual_record,
-              text: 'Press record to capture your beats',
+              text: 'Record your beats',
             ),
-            InfoItem(icon: Icons.stop, text: 'Press stop when done'),
-            InfoItem(icon: Icons.share, text: 'Share your creation!'),
+            InfoItem(icon: Icons.library_music, text: 'Access saved beats'),
+            InfoItem(icon: Icons.share, text: 'Share your creations!'),
           ],
         ),
         actions: [

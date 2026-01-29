@@ -33,6 +33,10 @@ class AppColors {
     [Color(0xFFE040FB), Color(0xFFEA80FC)], // Magenta
     [Color(0xFF00B8D4), Color(0xFF4DD0E1)], // Teal
     [Color(0xFFCDDC39), Color(0xFFDCE775)], // Lime
+    // Row 4
+    [Color(0xFFFF1744), Color(0xFFFF5252)], // Red
+    [Color(0xFF651FFF), Color(0xFF7C4DFF)], // Deep Purple
+    [Color(0xFF18FFFF), Color(0xFF84FFFF)], // Turquoise
   ];
 
   // Get gradient for a specific pad (0-8)

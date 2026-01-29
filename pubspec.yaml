@@ -49,6 +49,9 @@ dependencies:
   
   # Permissions
   permission_handler: ^11.3.1
+  
+  # Local storage for recordings
+  shared_preferences: ^2.2.3
 
 dev_dependencies:
   flutter_test:
