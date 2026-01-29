@@ -43,7 +43,7 @@ class DrumPadGrid extends StatelessWidget {
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
               crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
+              mainAxisSpacing: 11,
               childAspectRatio: aspectRatio.clamp(0.8, 1.5),
             ),
             itemCount: 12,
