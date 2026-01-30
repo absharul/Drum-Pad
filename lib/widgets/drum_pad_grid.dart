@@ -10,15 +10,15 @@ class DrumPadGrid extends StatelessWidget {
     'KICK',
     'SNARE',
     'HI-HAT',
-    'CLAP',
-    'TOM',
     'CYMBAL',
-    'PERC',
-    'BASS',
+    'TOM',
+    'CRASH',
+    'RIDE 1',
+    'RIDE 2',
+    'E-CRASH',
+    'E-RIDE',
+    'LONG RIDE',
     'FX',
-    'SYNTH',
-    'LOOP',
-    'MIX',
   ];
 
   const DrumPadGrid({super.key, required this.onPadTap});
