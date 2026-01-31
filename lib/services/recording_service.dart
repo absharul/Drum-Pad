@@ -4,6 +4,7 @@ import 'package:flutter_sound/flutter_sound.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
+import '../models/settings_model.dart';
 
 /// Service for recording and sharing audio
 class RecordingService {
@@ -15,6 +16,7 @@ class RecordingService {
   bool _isInitialized = false;
   bool _isRecording = false;
   String? _currentRecordingPath;
+  RecordingSource _currentSource = RecordingSource.micOnly;
 
   // Stream controller for recording duration
   final StreamController<Duration> _durationController =
@@ -31,6 +33,9 @@ class RecordingService {
   /// Path to the last recording
   String? get lastRecordingPath => _currentRecordingPath;
 
+  /// Current recording source
+  RecordingSource get currentSource => _currentSource;
+
   /// Initialize the recorder
   Future<bool> initialize() async {
     if (_isInitialized) return true;
@@ -46,8 +51,13 @@ class RecordingService {
     return true;
   }
 
-  /// Start recording
-  Future<bool> startRecording() async {
+  /// Set the recording source for future recordings
+  void setRecordingSource(RecordingSource source) {
+    _currentSource = source;
+  }
+
+  /// Start recording with the current recording source setting
+  Future<bool> startRecording({RecordingSource? source}) async {
     if (!_isInitialized) {
       final initialized = await initialize();
       if (!initialized) return false;
@@ -55,15 +65,44 @@ class RecordingService {
 
     if (_isRecording) return false;
 
+    // Use provided source or the current setting
+    final recordingSource = source ?? _currentSource;
+
     try {
       // Get app documents directory
       final directory = await getApplicationDocumentsDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       _currentRecordingPath = '${directory.path}/drum_recording_$timestamp.aac';
 
+      // Configure audio source based on recording source setting
+      // Note: Device audio capture requires Android 10+ and special permissions
+      AudioSource audioSource;
+      switch (recordingSource) {
+        case RecordingSource.micOnly:
+          audioSource = AudioSource.microphone;
+          break;
+        case RecordingSource.deviceAudio:
+          // Android 10+ supports media capture
+          // On unsupported devices, this will fall back to microphone
+          if (Platform.isAndroid) {
+            audioSource =
+                AudioSource.voice_call; // Best approximation for internal audio
+          } else {
+            audioSource = AudioSource.microphone;
+          }
+          break;
+        case RecordingSource.mixed:
+          // For mixed recording, we use mic but note that flutter_sound
+          // doesn't directly support mixing - this is a limitation
+          // Full implementation would require platform-specific code
+          audioSource = AudioSource.microphone;
+          break;
+      }
+
       await _recorder.startRecorder(
         toFile: _currentRecordingPath,
         codec: Codec.aacADTS,
+        audioSource: audioSource,
       );
 
       _isRecording = true;

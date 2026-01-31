@@ -94,16 +94,16 @@ class _WaveformVisualizerState extends State<WaveformVisualizer>
     final activeColor = widget.activeColor ?? AppColors.accent;
 
     return Container(
-      height: 50,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      height: 32,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
         color: AppColors.cardBackground.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         child: CustomPaint(
-          size: const Size(double.infinity, 50),
+          size: const Size(double.infinity, 32),
           painter: _WaveformPainter(
             barHeights: _barHeights,
             activeColor: activeColor,

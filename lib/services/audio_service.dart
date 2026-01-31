@@ -1,14 +1,16 @@
 import 'package:audioplayers/audioplayers.dart';
 import '../models/sound_pack.dart';
 
-/// Service for playing drum sounds with sound pack support
+/// Service for playing drum sounds with polyphonic support
 class AudioService {
   static final AudioService _instance = AudioService._internal();
   factory AudioService() => _instance;
   AudioService._internal();
 
-  // Audio players for each drum pad
-  final List<AudioPlayer> _players = [];
+  // Pool of audio players for polyphonic playback
+  static const int _poolSize = 12;
+  final List<AudioPlayer> _playerPool = [];
+  int _currentPlayerIndex = 0;
   bool _isInitialized = false;
 
   // Current sound pack
@@ -21,11 +23,29 @@ class AudioService {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    // Create audio players for each sound (12 pads)
-    for (int i = 0; i < 12; i++) {
+    // Audio context configuration for concurrent playback
+    final audioContext = AudioContext(
+      iOS: AudioContextIOS(
+        category: AVAudioSessionCategory.playback,
+        options: {AVAudioSessionOptions.mixWithOthers},
+      ),
+      android: AudioContextAndroid(
+        isSpeakerphoneOn: false,
+        stayAwake: false,
+        contentType: AndroidContentType.sonification,
+        usageType: AndroidUsageType.game,
+        audioFocus: AndroidAudioFocus.none, // Don't steal audio focus
+      ),
+    );
+
+    // Create a pool of audio players for polyphonic playback
+    for (int i = 0; i < _poolSize; i++) {
       final player = AudioPlayer();
-      await player.setReleaseMode(ReleaseMode.stop);
-      _players.add(player);
+      // Configure audio context to allow mixing
+      await player.setAudioContext(audioContext);
+      // Use release mode to allow sounds to complete naturally
+      await player.setReleaseMode(ReleaseMode.release);
+      _playerPool.add(player);
     }
 
     _isInitialized = true;
@@ -34,33 +54,37 @@ class AudioService {
   /// Switch to a different sound pack
   Future<void> switchSoundPack(SoundPack pack) async {
     _currentPack = pack;
-    // Stop all current sounds when switching
-    for (final player in _players) {
+    // Stop all current sounds when switching packs
+    for (final player in _playerPool) {
       await player.stop();
     }
   }
 
   /// Play sound for the given pad index (0-11)
+  /// Uses round-robin player selection from pool for polyphonic playback
   Future<void> playSound(int padIndex) async {
-    if (!_isInitialized || padIndex < 0 || padIndex >= _players.length) {
+    if (!_isInitialized || padIndex < 0 || padIndex >= 12) {
       return;
     }
 
-    final player = _players[padIndex];
+    // Get next available player from pool (round-robin)
+    final player = _playerPool[_currentPlayerIndex];
+    _currentPlayerIndex = (_currentPlayerIndex + 1) % _poolSize;
+
     final soundFile =
         _currentPack.soundFiles[padIndex % _currentPack.soundFiles.length];
 
-    // Stop current playback and play from beginning
+    // Stop this player if it's still playing, then play the new sound
     await player.stop();
     await player.play(AssetSource(soundFile));
   }
 
   /// Dispose all audio players
   Future<void> dispose() async {
-    for (final player in _players) {
+    for (final player in _playerPool) {
       await player.dispose();
     }
-    _players.clear();
+    _playerPool.clear();
     _isInitialized = false;
   }
 }

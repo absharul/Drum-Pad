@@ -114,7 +114,7 @@ class _RecordingControlsState extends State<RecordingControls>
     final isRecording = widget.recordingService.isRecording;
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
       decoration: BoxDecoration(
         color: AppColors.surface.withOpacity(0.8),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
@@ -194,7 +194,7 @@ class _RecordingControlsState extends State<RecordingControls>
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             // Control buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -206,8 +206,8 @@ class _RecordingControlsState extends State<RecordingControls>
                     animation: _pulseAnimation,
                     builder: (context, child) {
                       return Container(
-                        width: 72,
-                        height: 72,
+                        width: 60,
+                        height: 60,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: isRecording
@@ -264,13 +264,13 @@ class _RecordingControlsState extends State<RecordingControls>
                     },
                   ),
                 ),
-                const SizedBox(width: 32),
+                const SizedBox(width: 24),
                 // Share button
                 GestureDetector(
                   onTap: _hasRecording && !isRecording ? _shareRecording : null,
                   child: Container(
-                    width: 60,
-                    height: 60,
+                    width: 50,
+                    height: 50,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: _hasRecording && !isRecording
@@ -303,16 +303,7 @@ class _RecordingControlsState extends State<RecordingControls>
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            // Hint text
-            Text(
-              isRecording
-                  ? 'Tap the square to stop recording'
-                  : _hasRecording
-                  ? 'Tap share to send your beat!'
-                  : 'Tap the red button to start recording',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-            ),
+            // Hint text removed for compact UI
           ],
         ),
       ),
